@@ -1,26 +1,38 @@
 // 游戏状态管理
 class GameState {
     constructor() {
-        this.currentPage = 0;
+        this.scrollPosition = 0; // 滚动位置
         this.completedPuzzles = new Set();
-        this.isScrolling = false;
         this.isPuzzleMode = false;
         this.pages = [];
+        this.totalHeight = 0; // 总内容高度
     }
+
     // 从本地存储加载游戏状态
     load() {
         const saved = localStorage.getItem('mysteryGameProgress');
         if (saved) {
-            const data = JSON.parse(saved);
-            this.currentPage = data.currentPage || 0;
-            this.completedPuzzles = new Set(data.completedPuzzles || []);
+            try {
+                const data = JSON.parse(saved);
+                this.scrollPosition = data.scrollPosition || 0;
+                this.completedPuzzles = new Set(data.completedPuzzles || []);
+                console.log('从本地存储加载进度:', data);
+            } catch (error) {
+                console.error('解析本地存储数据失败:', error);
+                localStorage.removeItem('mysteryGameProgress');
+                this.scrollPosition = 0;
+                this.completedPuzzles = new Set();
+            }
+        } else {
+            console.log('未找到保存的进度，从顶部开始');
+            this.scrollPosition = 0;
         }
     }
 
     // 保存游戏状态到本地存储
     save() {
         const data = {
-            currentPage: this.currentPage,
+            scrollPosition: this.scrollPosition,
             completedPuzzles: Array.from(this.completedPuzzles)
         };
         localStorage.setItem('mysteryGameProgress', JSON.stringify(data));
@@ -37,22 +49,26 @@ class GameState {
         return this.completedPuzzles.has(pageIndex);
     }
 
-    // 移动到下一页
-    nextPage() {
-        if (this.currentPage < this.pages.length - 1) {
-            this.currentPage++;
-            this.save();
-            return true;
-        }
-        return false;
+    // 更新滚动位置
+    updateScrollPosition(position) {
+        this.scrollPosition = position;
+        this.save();
     }
 
-    // 移动到上一页
-    prevPage() {
-        if (this.currentPage > 0) {
-            this.currentPage--;
-            this.save();
-            return true;
+    // 检查当前位置是否有未完成的谜题
+    checkPuzzleAtPosition(scrollTop, viewportHeight) {
+        // 检查当前视口范围内是否有未完成的谜题
+        for (let i = 0; i < this.pages.length; i++) {
+            const page = this.pages[i];
+            if (page.hasPuzzle && !this.isPuzzleCompleted(i)) {
+                // 简化的检查：如果谜题页面在视口范围内且未完成，则阻止继续滚动
+                const pageStart = i * window.innerHeight;
+                const pageEnd = pageStart + window.innerHeight;
+                
+                if (scrollTop + viewportHeight > pageStart && scrollTop < pageEnd) {
+                    return true; // 有未完成的谜题
+                }
+            }
         }
         return false;
     }
@@ -210,32 +226,63 @@ class GameRenderer {
 
     // 绑定事件
     bindEvents() {
-        // 鼠标滚轮事件
+        // 鼠标滚轮事件 - 连续滚动
         this.scrollContent.addEventListener('wheel', (e) => {
             e.preventDefault();
-            if (this.gameState.isPuzzleMode && !this.gameState.isPuzzleCompleted(this.gameState.currentPage)) {
-                return; // 谜题未完成时禁止滚动
+            
+            const currentScroll = this.scrollContent.scrollTop;
+            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+            
+            // 检查是否有未完成的谜题阻止滚动
+            if (this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                console.log('检测到未完成的谜题，阻止滚动');
+                return;
             }
             
-            if (e.deltaY > 0) {
-                this.scrollDown();
-            } else {
-                this.scrollUp();
-            }
+            // 执行滚动
+            const newScroll = currentScroll + e.deltaY * 2; // 调整滚动速度
+            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            
+            this.scrollContent.scrollTo(0, clampedScroll);
+            this.gameState.updateScrollPosition(clampedScroll);
+            this.updateScrollHint();
         });
 
-        // 键盘事件
+        // 键盘事件 - 连续滚动
         document.addEventListener('keydown', (e) => {
+            const currentScroll = this.scrollContent.scrollTop;
+            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+            const scrollStep = 50; // 键盘滚动步长
+            
+            let newScroll = currentScroll;
+            
             if (e.key === 'ArrowDown' || e.key === 'PageDown') {
                 e.preventDefault();
-                this.scrollDown();
+                newScroll = currentScroll + scrollStep;
             } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
                 e.preventDefault();
-                this.scrollUp();
+                newScroll = currentScroll - scrollStep;
             }
+            
+            // 检查谜题限制
+            if (newScroll > currentScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                return;
+            }
+            
+            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            this.scrollContent.scrollTo(0, clampedScroll);
+            this.gameState.updateScrollPosition(clampedScroll);
+            this.updateScrollHint();
         });
 
-        // 触摸事件（移动端支持）
+        // 滚动事件监听
+        this.scrollContent.addEventListener('scroll', () => {
+            const scrollTop = this.scrollContent.scrollTop;
+            this.gameState.updateScrollPosition(scrollTop);
+            this.updateScrollHint();
+        });
+
+        // 触摸事件（移动端支持）- 连续滚动
         let touchStartY = 0;
         this.scrollContent.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
@@ -244,13 +291,25 @@ class GameRenderer {
         this.scrollContent.addEventListener('touchend', (e) => {
             const touchEndY = e.changedTouches[0].clientY;
             const diff = touchStartY - touchEndY;
+            const currentScroll = this.scrollContent.scrollTop;
+            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
             
             if (Math.abs(diff) > 50) {
+                let newScroll = currentScroll;
                 if (diff > 0) {
-                    this.scrollDown();
+                    newScroll = currentScroll + 100; // 向上滑动，向下滚动
                 } else {
-                    this.scrollUp();
+                    newScroll = currentScroll - 100; // 向下滑动，向上滚动
                 }
+                
+                // 检查谜题限制
+                if (newScroll > currentScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                    return;
+                }
+                
+                const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+                this.scrollContent.scrollTo(0, clampedScroll);
+                this.gameState.updateScrollPosition(clampedScroll);
             }
         });
 
@@ -273,41 +332,18 @@ class GameRenderer {
         console.log('调试模式：已禁用右键和F12限制');
     }
 
-    // 向下滚动
-    scrollDown() {
-        if (this.gameState.isScrolling) return;
-        
-        if (this.gameState.nextPage()) {
-            this.gameState.isScrolling = true;
-            this.renderCurrentPage();
-            setTimeout(() => {
-                this.gameState.isScrolling = false;
-            }, 500);
-        } else {
-            this.hideScrollHint();
-        }
-    }
-
-    // 向上滚动
-    scrollUp() {
-        if (this.gameState.isScrolling) return;
-        
-        if (this.gameState.prevPage()) {
-            this.gameState.isScrolling = true;
-            this.renderCurrentPage();
-            setTimeout(() => {
-                this.gameState.isScrolling = false;
-            }, 500);
-        }
-    }
+    // 注意：scrollDown和scrollUp方法已不再使用，已替换为连续滚动
 
     // 显示/隐藏滚动提示
     updateScrollHint() {
-        const currentPage = this.gameState.pages[this.gameState.currentPage];
-        const canScrollDown = this.gameState.currentPage < this.gameState.pages.length - 1;
-        const puzzleCompleted = !currentPage?.hasPuzzle || this.gameState.isPuzzleCompleted(this.gameState.currentPage);
+        const currentScroll = this.scrollContent.scrollTop;
+        const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+        const canScrollDown = currentScroll < maxScroll - 10; // 还有内容可以滚动
         
-        if (canScrollDown && puzzleCompleted) {
+        // 检查是否有未完成的谜题阻止滚动
+        const hasBlockingPuzzle = this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight);
+        
+        if (canScrollDown && !hasBlockingPuzzle) {
             this.showScrollHint();
         } else {
             this.hideScrollHint();
@@ -335,8 +371,13 @@ class GameRenderer {
             console.log('页面加载完成，共', this.gameState.pages.length, '页');
             
             if (this.gameState.pages.length > 0) {
-                this.renderCurrentPage();
+                this.renderAllPages(); // 渲染所有页面
                 console.log('页面渲染完成');
+                
+                // 恢复滚动位置
+                if (this.gameState.scrollPosition > 0) {
+                    this.scrollContent.scrollTo(0, this.gameState.scrollPosition);
+                }
             } else {
                 console.error('没有加载到任何页面');
                 this.showErrorMessage('游戏内容加载失败，请刷新页面重试');
@@ -369,46 +410,42 @@ class GameRenderer {
         this.hideLoadingScreen();
     }
 
-    // 渲染当前页面
-    renderCurrentPage() {
-        const page = this.gameState.pages[this.gameState.currentPage];
-        if (!page) {
-            console.error('页面不存在:', this.gameState.currentPage);
-            return;
-        }
-
-        console.log('渲染页面:', page.index, page.elements);
+    // 渲染所有页面（连续滚动）
+    renderAllPages() {
+        console.log('渲染所有页面，共', this.gameState.pages.length, '页');
         
         this.scrollContent.innerHTML = '';
-        const pageElement = document.createElement('div');
-        pageElement.className = 'page';
         
-        page.elements.forEach((element, index) => {
-            const elementNode = this.createElement(element, page.index);
-            if (elementNode) {
-                pageElement.appendChild(elementNode);
-                // 添加渐出效果
-                setTimeout(() => {
-                    if (elementNode.classList) {
-                        elementNode.classList.add('visible');
-                    }
-                    // 确保元素可见
-                    elementNode.style.opacity = '1';
-                    elementNode.style.transform = 'translateY(0)';
-                }, index * 200);
+        this.gameState.pages.forEach((page, pageIndex) => {
+            if (!page) {
+                console.error('页面不存在:', pageIndex);
+                return;
             }
-        });
 
-        this.scrollContent.appendChild(pageElement);
-        
-        // 页面容器添加动画效果
-        pageElement.classList.add('animating');
-        setTimeout(() => {
-            pageElement.classList.remove('animating');
-        }, 100);
-        
-        // 设置谜题模式
-        this.gameState.isPuzzleMode = page.hasPuzzle;
+            console.log('渲染页面:', page.index, page.elements);
+            
+            const pageElement = document.createElement('div');
+            pageElement.className = 'page';
+            pageElement.id = `page-${pageIndex}`;
+            
+            page.elements.forEach((element, index) => {
+                const elementNode = this.createElement(element, pageIndex);
+                if (elementNode) {
+                    pageElement.appendChild(elementNode);
+                    // 添加渐出效果
+                    setTimeout(() => {
+                        if (elementNode.classList) {
+                            elementNode.classList.add('visible');
+                        }
+                        // 确保元素可见
+                        elementNode.style.opacity = '1';
+                        elementNode.style.transform = 'translateY(0)';
+                    }, index * 200);
+                }
+            });
+
+            this.scrollContent.appendChild(pageElement);
+        });
         
         // 更新滚动提示
         this.updateScrollHint();
