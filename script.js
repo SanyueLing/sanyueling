@@ -254,20 +254,23 @@ class GameRenderer {
             }
         });
 
+        // 调试模式：不禁用右键和F12
         // 禁用右键菜单
-        document.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-        });
+        // document.addEventListener('contextmenu', (e) => {
+        //     e.preventDefault();
+        // });
 
         // 禁用F12和开发者工具快捷键
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'F12' || 
-                (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-                (e.ctrlKey && e.shiftKey && e.key === 'J') ||
-                (e.ctrlKey && e.key === 'U')) {
-                e.preventDefault();
-            }
-        });
+        // document.addEventListener('keydown', (e) => {
+        //     if (e.key === 'F12' || 
+        //         (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        //         (e.ctrlKey && e.shiftKey && e.key === 'J') ||
+        //         (e.ctrlKey && e.key === 'U')) {
+        //         e.preventDefault();
+        //     }
+        // });
+        
+        console.log('调试模式：已禁用右键和F12限制');
     }
 
     // 向下滚动
