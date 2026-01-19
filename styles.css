@@ -87,15 +87,15 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    opacity: 0;
-    transform: translateY(20px);
+    opacity: 1;
+    transform: translateY(0);
     transition: opacity 0.8s ease, transform 0.8s ease;
     margin-bottom: 50px;
 }
 
-.page.visible {
-    opacity: 1;
-    transform: translateY(0);
+.page.animating {
+    opacity: 0;
+    transform: translateY(20px);
 }
 
 .page-content {

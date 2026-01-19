@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>解密游戏演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimSun', sans-serif;
+            background-color: #000;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #scroll-content {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            min-height: 100vh;
+            background-color: #f5f5dc;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            padding: 40px 60px;
+            line-height: 1.8;
+            font-size: 18px;
+            text-align: justify;
+        }
+        
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 50px;
+        }
+        
+        .page-text {
+            margin-bottom: 20px;
+            white-space: pre-line;
+            line-height: 1.8;
+        }
+        
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: #fff;
+        }
+        
+        .loading-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: #d4af37;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="scroll-content">
+            <!-- 演示内容 -->
+        </div>
+    </div>
+    
+    <!-- 加载屏幕 -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <h1>解密游戏演示</h1>
+            <p>正在加载...</p>
+        </div>
+    </div>
+    <script>
+        // 简单的演示版本
+        document.addEventListener('DOMContentLoaded', function() {
+            // 模拟加载过程
+            setTimeout(() => {
+                showDemoContent();
+                hideLoadingScreen();
+            }, 1000);
+        });
+        
+        function showDemoContent() {
+            const scrollContent = document.getElementById('scroll-content');
+            scrollContent.innerHTML = `
+                <div class="page">
+                    <div class="page-text">
+                        你叫白依玲，2007年1月23日出生，目前在河东传媒大学（在省会汾水市）读大一，数字媒体专业。家住在河东省秀容市雁门区，离汾水也不远，有时候周末也会回去一趟。今天是2026年1月23日，没错，正是依玲19岁的生日。
+                    </div>
+                </div>
+                
+                <div class="page">
+                    <div class="page-text">
+                        早上9点多钟，一声略显突兀的手机铃声打破了宿舍的寂静。"谁这么大早打电话？"依玲心里纳闷着，接起了电话。
+                        
+                        "是白依玲吧？"电话那边是一个男声，略带失真，像极了短视频普遍使用的AI音色。
+                        
+                        "我是，你是哪位？"
+                        
+                        "你有个快递，放在你宿舍单元楼下了，下来取一下。"男人的语速很快，甚至听的不是很清楚。
+                    </div>
+                </div>
+                
+                <div class="page">
+                    <div class="page-text">
+                        依玲的哥哥名依庆，2000年11月24日出生，从小就非常特爱自己的妹妹依玲。15岁那年，在父亲的安排下前往欧国学习，本科毕业后便留在了当地工作，但工作地点很神秘，也没有向自己的妹妹具体说过，只说是在一家高科技公司上班。
+                    </div>
+                </div>
+            `;
+        }
+        
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -326,20 +326,56 @@ class GameRenderer {
     // 加载游戏
     async loadGame() {
         try {
+            console.log('开始加载游戏...');
             await this.parser.loadAllPages();
             this.gameState.pages = this.parser.gameState.pages;
-            this.renderCurrentPage();
+            console.log('页面加载完成，共', this.gameState.pages.length, '页');
+            
+            if (this.gameState.pages.length > 0) {
+                this.renderCurrentPage();
+                console.log('页面渲染完成');
+            } else {
+                console.error('没有加载到任何页面');
+                this.showErrorMessage('游戏内容加载失败，请刷新页面重试');
+            }
+            
             this.hideLoadingScreen();
         } catch (error) {
             console.error('游戏加载失败:', error);
+            this.showErrorMessage('游戏加载失败: ' + error.message);
         }
+    }
+    
+    // 显示错误信息
+    showErrorMessage(message) {
+        this.scrollContent.innerHTML = `
+            <div style="text-align: center; padding: 50px; color: #e74c3c;">
+                <h2>游戏加载失败</h2>
+                <p>${message}</p>
+                <button onclick="location.reload()" style="
+                    padding: 10px 20px;
+                    background: #d4af37;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    margin-top: 20px;
+                ">刷新页面</button>
+            </div>
+        `;
+        this.hideLoadingScreen();
     }
 
     // 渲染当前页面
     renderCurrentPage() {
         const page = this.gameState.pages[this.gameState.currentPage];
-        if (!page) return;
+        if (!page) {
+            console.error('页面不存在:', this.gameState.currentPage);
+            return;
+        }
 
+        console.log('渲染页面:', page.index, page.elements);
+        
         this.scrollContent.innerHTML = '';
         const pageElement = document.createElement('div');
         pageElement.className = 'page';
@@ -350,12 +386,23 @@ class GameRenderer {
                 pageElement.appendChild(elementNode);
                 // 添加渐出效果
                 setTimeout(() => {
-                    elementNode.classList.add('visible');
+                    if (elementNode.classList) {
+                        elementNode.classList.add('visible');
+                    }
+                    // 确保元素可见
+                    elementNode.style.opacity = '1';
+                    elementNode.style.transform = 'translateY(0)';
                 }, index * 200);
             }
         });
 
         this.scrollContent.appendChild(pageElement);
+        
+        // 页面容器添加动画效果
+        pageElement.classList.add('animating');
+        setTimeout(() => {
+            pageElement.classList.remove('animating');
+        }, 100);
         
         // 设置谜题模式
         this.gameState.isPuzzleMode = page.hasPuzzle;
@@ -387,7 +434,17 @@ class GameRenderer {
             // 读取文本文件内容
             this.loadTextContent(element.content).then(content => {
                 textNode.textContent = content;
+                // 确保文本加载后也能显示
+                textNode.style.opacity = '1';
+                textNode.style.transform = 'translateY(0)';
+            }).catch(error => {
+                console.error('加载文本失败:', error);
+                textNode.textContent = '文本加载失败';
+                textNode.style.opacity = '1';
+                textNode.style.transform = 'translateY(0)';
             });
+        } else {
+            textNode.textContent = '无文本内容';
         }
         
         return textNode;
