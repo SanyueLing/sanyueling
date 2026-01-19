@@ -1,0 +1,4 @@
+<txt>{txt1}</txt>
+{
+    txt1 = "./src/txt/txt2"
+}
