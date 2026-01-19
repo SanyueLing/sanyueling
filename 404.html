@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面未找到 - 解密游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimSun', sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            padding: 40px;
+            background-color: #f5f5dc;
+            color: #333;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+        
+        h1 {
+            font-size: 3rem;
+            color: #d4af37;
+            margin-bottom: 20px;
+        }
+        
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background-color: #d4af37;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn:hover {
+            background-color: #b8860b;
+        }
+        
+        .error-code {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>404</h1>
+        <p>哎呀！页面未找到</p>
+        <p>您访问的页面不存在，可能原因：</p>
+        <ul style="text-align: left; margin: 20px 0; padding-left: 20px;">
+            <li>URL地址输入错误</li>
+            <li>页面已被移动或删除</li>
+            <li>链接已过期</li>
+        </ul>
+        <a href="/" class="btn">返回游戏主页</a>
+        <div class="error-code">
+            错误代码：404 Not Found
+        </div>
+    </div>
+</body>
+</html>

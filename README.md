@@ -23,6 +23,11 @@
 
 ## 如何运行
 
+### 在线访问（推荐）
+游戏已部署到GitHub Pages，可以直接在线访问：
+**[https://你的用户名.github.io/sanyueling](https://你的用户名.github.io/sanyueling)**
+
+### 本地运行
 1. 启动本地服务器：
    ```bash
    python3 -m http.server 8000
