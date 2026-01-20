@@ -152,18 +152,39 @@ class PageParser {
     parseConfig(configContent, page) {
         const lines = configContent.split('\n');
         const config = {};
+        let i = 0;
 
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed && trimmed.includes('=')) {
-                const [key, value] = trimmed.split('=').map(s => s.trim());
-                if (value.startsWith('{') && value.endsWith('}')) {
-                    // 解析嵌套对象
-                    config[key] = this.parseNestedObject(value);
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (line && line.includes('=')) {
+                const [key, value] = line.split('=').map(s => s.trim());
+                if (value.startsWith('{')) {
+                    // 解析多行嵌套对象
+                    let nestedContent = value; // 从当前行的 '{' 开始
+                    let braceCount = 1; // 已经有一个 '{'
+                    i++; // 移动到下一行
+                    
+                    // 收集所有行直到找到匹配的 '}'
+                    while (i < lines.length && braceCount > 0) {
+                        const nextLine = lines[i];
+                        nestedContent += '\n' + nextLine;
+                        
+                        // 计算括号匹配
+                        for (const char of nextLine) {
+                            if (char === '{') braceCount++;
+                            if (char === '}') braceCount--;
+                        }
+                        
+                        i++;
+                    }
+                    
+                    config[key] = this.parseNestedObject(nestedContent);
+                    continue; // 跳过 i++ 因为已经处理了多行
                 } else {
                     config[key] = value.replace(/['"]/g, '');
                 }
             }
+            i++;
         }
 
         // 将配置应用到页面元素
