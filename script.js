@@ -65,7 +65,10 @@ class GameState {
                 const pageElement = document.getElementById(`page-${i}`);
                 if (pageElement) {
                     const pageRect = pageElement.getBoundingClientRect();
-                    const containerRect = this.scrollContent.getBoundingClientRect();
+                    const scrollContent = document.getElementById('scroll-content');
+                    if (!scrollContent) continue;
+                    
+                    const containerRect = scrollContent.getBoundingClientRect();
                     
                     // 检查谜题页面是否在视口中
                     const isInViewport = pageRect.top < containerRect.bottom && pageRect.bottom > containerRect.top;
@@ -211,6 +214,8 @@ class GameRenderer {
     constructor() {
         this.gameState = new GameState();
         this.parser = new PageParser();
+        // 确保使用同一个 GameState 实例
+        this.parser.gameState = this.gameState;
         this.scrollContent = document.getElementById('scroll-content');
         this.scrollHint = null;
         this.init();
@@ -347,6 +352,8 @@ class GameRenderer {
 
     // 显示/隐藏滚动提示
     updateScrollHint() {
+        if (!this.scrollContent) return;
+        
         const currentScroll = this.scrollContent.scrollTop;
         const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
         const canScrollDown = currentScroll < maxScroll - 10; // 还有内容可以滚动
@@ -378,7 +385,7 @@ class GameRenderer {
         try {
             console.log('开始加载游戏...');
             await this.parser.loadAllPages();
-            this.gameState.pages = this.parser.gameState.pages;
+            // pages are already set in the shared gameState instance
             console.log('页面加载完成，共', this.gameState.pages.length, '页');
             
             if (this.gameState.pages.length > 0) {
