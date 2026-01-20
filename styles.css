@@ -73,6 +73,7 @@ body {
     transform: translateX(-50%);
     width: 600px; /* 约15个字的宽度 */
     min-height: 100vh;
+    max-height: 100vh; /* 限制最大高度为视窗高度 */
     background-color: #f5f5dc; /* 米黄色 */
     box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
     padding: 40px 60px;
@@ -80,6 +81,8 @@ body {
     font-size: 18px;
     text-align: justify;
     transition: transform 0.3s ease;
+    overflow-y: auto; /* 启用垂直滚动 */
+    overflow-x: hidden; /* 禁用水平滚动 */
 }
 
 /* 页面样式 */
