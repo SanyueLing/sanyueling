@@ -593,7 +593,7 @@ class GameRenderer {
         const errorMessage = element.content?.['错误提示文案'];
         
         if (answer === correctAnswer) {
-            // 答案正确
+            // 答案正确，直接解锁至浏览态
             errorDiv.textContent = '';
             input.disabled = true;
             container.querySelector('.puzzle-submit').disabled = true;
@@ -601,13 +601,6 @@ class GameRenderer {
             
             this.gameState.completePuzzle(pageIndex);
             this.updateScrollHint();
-            
-            // 显示成功提示
-            const successMsg = document.createElement('div');
-            successMsg.style.color = '#2ecc71';
-            successMsg.style.marginTop = '10px';
-            successMsg.textContent = '恭喜！谜题解开！';
-            container.appendChild(successMsg);
             
         } else {
             // 答案错误
