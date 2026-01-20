@@ -64,36 +64,39 @@ class GameState {
                 // 计算页面在文档中的实际位置
                 const pageElement = document.getElementById(`page-${i}`);
                 if (pageElement) {
-                    const pageRect = pageElement.getBoundingClientRect();
                     const scrollContent = document.getElementById('scroll-content');
                     if (!scrollContent) continue;
                     
                     const containerRect = scrollContent.getBoundingClientRect();
                     
-                    // 更严格的视口检测：只要页面有任何部分在视口中就阻止滚动
-                    const isInViewport = pageRect.top < containerRect.bottom && pageRect.bottom > containerRect.top;
-                    
-                    // 额外检查：如果页面的顶部在视口内，也阻止滚动
-                    const isTopInViewport = pageRect.top >= containerRect.top && pageRect.top < containerRect.bottom;
-                    
-                    // 额外检查：如果谜题输入框在视口中，也阻止滚动
+                    // 主要检查：只有当谜题输入框在视口中时才阻止滚动
                     const puzzleInput = pageElement.querySelector('.puzzle-input');
-                    let isPuzzleInputVisible = false;
                     if (puzzleInput) {
                         const inputRect = puzzleInput.getBoundingClientRect();
-                        isPuzzleInputVisible = inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
+                        const isPuzzleInputVisible = inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
+                        
+                        // 额外检查：如果谜题输入框的顶部已经进入视口，也阻止滚动
+                        const isPuzzleInputTopVisible = inputRect.top >= containerRect.top && inputRect.top < containerRect.bottom;
+                        
+                        if (isPuzzleInputVisible || isPuzzleInputTopVisible) {
+                            console.log(`检测到第${i+1}页的谜题输入框在视口中，阻止向下滚动`, {
+                                isPuzzleInputVisible,
+                                isPuzzleInputTopVisible,
+                                inputTop: inputRect.top,
+                                containerBottom: containerRect.bottom,
+                                containerTop: containerRect.top
+                            });
+                            return true; // 有未完成的谜题
+                        }
                     }
                     
-                    if (isInViewport || isTopInViewport || isPuzzleInputVisible) {
-                        console.log(`检测到第${i+1}页有未完成的谜题，阻止向下滚动`, {
-                            isInViewport,
-                            isTopInViewport,
-                            isPuzzleInputVisible,
-                            pageTop: pageRect.top,
-                            containerBottom: containerRect.bottom,
-                            containerTop: containerRect.top
-                        });
-                        return true; // 有未完成的谜题
+                    // 备选检查：如果整个页面都在视口中且包含谜题，也阻止滚动
+                    const pageRect = pageElement.getBoundingClientRect();
+                    const isPageFullyInViewport = pageRect.top >= containerRect.top && pageRect.bottom <= containerRect.bottom;
+                    
+                    if (isPageFullyInViewport) {
+                        console.log(`检测到第${i+1}页完全在视口中且有未完成的谜题，阻止向下滚动`);
+                        return true;
                     }
                 }
             }
