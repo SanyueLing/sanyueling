@@ -61,12 +61,19 @@ class GameState {
         for (let i = 0; i < this.pages.length; i++) {
             const page = this.pages[i];
             if (page.hasPuzzle && !this.isPuzzleCompleted(i)) {
-                // 简化的检查：如果谜题页面在视口范围内且未完成，则阻止继续滚动
-                const pageStart = i * window.innerHeight;
-                const pageEnd = pageStart + window.innerHeight;
-                
-                if (scrollTop + viewportHeight > pageStart && scrollTop < pageEnd) {
-                    return true; // 有未完成的谜题
+                // 计算页面在文档中的实际位置
+                const pageElement = document.getElementById(`page-${i}`);
+                if (pageElement) {
+                    const pageRect = pageElement.getBoundingClientRect();
+                    const containerRect = this.scrollContent.getBoundingClientRect();
+                    
+                    // 检查谜题页面是否在视口中
+                    const isInViewport = pageRect.top < containerRect.bottom && pageRect.bottom > containerRect.top;
+                    
+                    if (isInViewport) {
+                        console.log(`检测到第${i+1}页有未完成的谜题，阻止向下滚动`);
+                        return true; // 有未完成的谜题
+                    }
                 }
             }
         }
@@ -233,19 +240,23 @@ class GameRenderer {
             const currentScroll = this.scrollContent.scrollTop;
             const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
             
-            // 检查是否有未完成的谜题阻止滚动
-            if (this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
-                console.log('检测到未完成的谜题，阻止滚动');
+            // 只检查向下滚动时的谜题限制
+            if (e.deltaY > 0 && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                console.log('检测到未完成的谜题，阻止向下滚动');
                 return;
             }
             
             // 执行滚动
-            const newScroll = currentScroll + e.deltaY * 2; // 调整滚动速度
+            const scrollSpeed = Math.min(Math.abs(e.deltaY), 100); // 限制最大滚动速度
+            const newScroll = currentScroll + (e.deltaY > 0 ? scrollSpeed : -scrollSpeed);
             const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
             
-            this.scrollContent.scrollTo(0, clampedScroll);
-            this.gameState.updateScrollPosition(clampedScroll);
-            this.updateScrollHint();
+            // 只有当滚动位置实际改变时才执行
+            if (clampedScroll !== currentScroll) {
+                this.scrollContent.scrollTo(0, clampedScroll);
+                this.gameState.updateScrollPosition(clampedScroll);
+                this.updateScrollHint();
+            }
         });
 
         // 键盘事件 - 连续滚动

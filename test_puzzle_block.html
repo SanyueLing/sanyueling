@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>谜题阻止滚动测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'SimSun', sans-serif;
+            background-color: #000;
+            color: #333;
+            overflow: hidden;
+        }
+        
+        #scroll-content {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            min-height: 100vh;
+            max-height: 100vh;
+            background-color: #f5f5dc;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            padding: 40px 60px;
+            line-height: 1.8;
+            font-size: 18px;
+            text-align: justify;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 50px;
+            border: 2px solid #ccc;
+            padding: 20px;
+        }
+        
+        .page-text {
+            margin-bottom: 20px;
+            white-space: pre-line;
+            line-height: 1.8;
+        }
+        
+        .puzzle-input-container {
+            margin: 30px 0;
+            text-align: center;
+            border: 2px solid #d4af37;
+            padding: 20px;
+            background-color: #fff;
+        }
+        
+        .puzzle-input {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #d4af37;
+            border-radius: 25px;
+            background-color: #fff;
+            width: 300px;
+            text-align: center;
+            outline: none;
+        }
+        
+        .puzzle-submit {
+            margin-top: 15px;
+            padding: 10px 30px;
+            font-size: 16px;
+            background-color: #d4af37;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+        }
+        
+        .puzzle-error {
+            margin-top: 10px;
+            color: #e74c3c;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        .test-info {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        
+        .puzzle-locked {
+            background-color: #ffebee !important;
+            border-color: #e74c3c !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="scroll-content">
+        <div class="page" id="page-0">
+            <div class="page-text">
+                第1页：你叫白依玲，2007年1月23日出生，目前在河东传媒大学（在省会汾水市）读大一，数字媒体专业。家住在河东省秀容市雁门区，离汾水也不远，有时候周末也会回去一趟。今天是2026年1月23日，没错，正是依玲19岁的生日。
+            </div>
+        </div>
+        
+        <div class="page" id="page-1">
+            <div class="page-text">
+                第2页：早上9点多钟，一声略显突兀的手机铃声打破了宿舍的寂静。"谁这么大早打电话？"依玲心里纳闷着，接起了电话。
+                
+                "是白依玲吧？"电话那边是一个男声，略带失真，像极了短视频普遍使用的AI音色。
+                
+                "我是，你是哪位？"
+                
+                "你有个快递，放在你宿舍单元楼下了，下来取一下。"男人的语速很快，甚至听的不是很清楚。
+            </div>
+        </div>
+        
+        <div class="page" id="page-2">
+            <div class="page-text">
+                第3页：依玲的哥哥名依庆，2000年11月24日出生，从小就非常特爱自己的妹妹依玲。15岁那年，在父亲的安排下前往欧国学习，本科毕业后便留在了当地工作，但工作地点很神秘，也没有向自己的妹妹具体说过，只说是在一家高科技公司上班。
+            </div>
+        </div>
+        
+        <div class="page" id="page-3">
+            <div class="page-text">
+                第4页：突出起来的线索让依玲激动不已。失联了近两个月的哥哥突然出现了相关信息，这让她这段时间一直悬着的心舒缓了一些。
+                
+                这是一个谜题页面，解开谜题后才能继续向下滚动！
+            </div>
+            
+            <div class="puzzle-input-container">
+                <div>谜题：请输入答案</div>
+                <input type="text" class="puzzle-input" placeholder="请输入答案...">
+                <button class="puzzle-submit">提交</button>
+                <div class="puzzle-error"></div>
+            </div>
+        </div>
+        
+        <div class="page" id="page-4">
+            <div class="page-text">
+                第5页：未完待续……………………
+                
+                如果看到这个页面，说明谜题已经解开或者滚动限制有问题！
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-info">
+        <div>谜题阻止滚动测试</div>
+        <div id="scroll-info">滚动位置: 0</div>
+        <div id="puzzle-status">谜题状态: 未完成</div>
+        <div id="block-status">阻止状态: 正常</div>
+    </div>
+    <script>
+        const scrollContent = document.getElementById('scroll-content');
+        const puzzleInput = document.querySelector('.puzzle-input');
+        const puzzleSubmit = document.querySelector('.puzzle-submit');
+        const puzzleError = document.querySelector('.puzzle-error');
+        const puzzleStatus = document.getElementById('puzzle-status');
+        const blockStatus = document.getElementById('block-status');
+        const scrollInfo = document.getElementById('scroll-info');
+        
+        let puzzleCompleted = false;
+        
+        // 更新滚动信息
+        function updateScrollInfo() {
+            const currentScroll = scrollContent.scrollTop;
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            scrollInfo.textContent = `滚动位置: ${currentScroll.toFixed(0)} / ${maxScroll.toFixed(0)}`;
+        }
+        
+        // 检查谜题页面是否在视口中
+        function checkPuzzleInViewport() {
+            const puzzlePage = document.getElementById('page-3');
+            if (!puzzlePage) return false;
+            
+            const rect = puzzlePage.getBoundingClientRect();
+            const containerRect = scrollContent.getBoundingClientRect();
+            
+            // 检查谜题页面是否在视口中
+            const isInViewport = rect.top < containerRect.bottom && rect.bottom > containerRect.top;
+            
+            if (isInViewport && !puzzleCompleted) {
+                puzzlePage.classList.add('puzzle-locked');
+                blockStatus.textContent = '阻止状态: 已阻止向下滚动';
+                return true;
+            } else {
+                puzzlePage.classList.remove('puzzle-locked');
+                blockStatus.textContent = '阻止状态: 正常';
+                return false;
+            }
+        }
+        
+        // 滚轮事件处理
+        scrollContent.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const currentScroll = scrollContent.scrollTop;
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            
+            console.log('滚轮事件:', e.deltaY, '当前滚动:', currentScroll);
+            
+            // 检查是否应该阻止向下滚动
+            if (e.deltaY > 0 && checkPuzzleInViewport()) {
+                console.log('检测到谜题页面，阻止向下滚动');
+                return;
+            }
+            
+            // 执行滚动
+            const scrollSpeed = Math.min(Math.abs(e.deltaY), 100);
+            const newScroll = currentScroll + (e.deltaY > 0 ? scrollSpeed : -scrollSpeed);
+            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            
+            if (clampedScroll !== currentScroll) {
+                scrollContent.scrollTo(0, clampedScroll);
+                updateScrollInfo();
+            }
+        });
+        
+        // 键盘事件处理
+        document.addEventListener('keydown', (e) => {
+            const currentScroll = scrollContent.scrollTop;
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            const scrollStep = 50;
+            
+            let newScroll = currentScroll;
+            
+            if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+                e.preventDefault();
+                newScroll = currentScroll + scrollStep;
+            } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+                e.preventDefault();
+                newScroll = currentScroll - scrollStep;
+            }
+            
+            // 检查是否应该阻止向下滚动
+            if (newScroll > currentScroll && checkPuzzleInViewport()) {
+                console.log('键盘事件: 检测到谜题页面，阻止向下滚动');
+                return;
+            }
+            
+            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            if (clampedScroll !== currentScroll) {
+                scrollContent.scrollTo(0, clampedScroll);
+                updateScrollInfo();
+            }
+        });
+        
+        // 谜题提交处理
+        puzzleSubmit.addEventListener('click', () => {
+            const answer = puzzleInput.value.trim();
+            if (answer === '木箱翻面') {
+                puzzleError.textContent = '恭喜！谜题解开！';
+                puzzleError.style.color = '#2ecc71';
+                puzzleInput.disabled = true;
+                puzzleSubmit.disabled = true;
+                puzzleCompleted = true;
+                puzzleStatus.textContent = '谜题状态: 已完成';
+                console.log('谜题已解开，可以继续滚动');
+            } else {
+                puzzleError.textContent = '一共是四个字';
+                puzzleError.style.color = '#e74c3c';
+            }
+        });
+        
+        // 回车提交
+        puzzleInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                puzzleSubmit.click();
+            }
+        });
+        
+        // 滚动事件监听
+        scrollContent.addEventListener('scroll', () => {
+            updateScrollInfo();
+            checkPuzzleInViewport();
+        });
+        
+        // 初始化
+        window.onload = function() {
+            console.log('谜题阻止滚动测试页面加载完成');
+            updateScrollInfo();
+            puzzleStatus.textContent = '谜题状态: 未完成';
+        };
+    </script>
+</body>
+</html>
