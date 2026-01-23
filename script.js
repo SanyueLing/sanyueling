@@ -600,22 +600,29 @@ class GameRenderer {
                               inputRect.bottom <= containerRect.bottom;
         
         if (!isFullyVisible) {
-            // 计算需要滚动的位置，使输入框居中显示
-            const inputCenter = inputRect.top + inputRect.height / 2;
-            const viewportCenter = containerRect.top + containerRect.height / 2;
-            const scrollAdjustment = inputCenter - viewportCenter;
-            
             const currentScroll = scrollContent.scrollTop;
-            const newScroll = currentScroll + scrollAdjustment;
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            let targetScroll = currentScroll;
+            
+            // 如果输入框在上方超出视口
+            if (inputRect.top < containerRect.top) {
+                // 滚动使输入框顶部对齐视口顶部，留一些边距
+                targetScroll = currentScroll + inputRect.top - containerRect.top - 20;
+            }
+            // 如果输入框在下方超出视口
+            else if (inputRect.bottom > containerRect.bottom) {
+                // 滚动使输入框底部对齐视口底部，留一些边距
+                targetScroll = currentScroll + inputRect.bottom - containerRect.bottom + 20;
+            }
             
             // 确保滚动位置在有效范围内
-            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
-            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
             
-            if (Math.abs(clampedScroll - currentScroll) > 5) {
-                console.log('调整输入框位置，滚动距离:', clampedScroll - currentScroll);
+            // 只有当需要显著滚动时才执行
+            if (Math.abs(targetScroll - currentScroll) > 5) {
+                console.log('调整输入框位置，从', currentScroll, '到', targetScroll);
                 scrollContent.scrollTo({
-                    top: clampedScroll,
+                    top: targetScroll,
                     behavior: 'smooth'
                 });
             }
