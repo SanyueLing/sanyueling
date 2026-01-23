@@ -1,4 +1,11 @@
 <txt>{txt1}</txt>
+<pic>{pic1}</pic>
+<inputbox>{secert1}</inputbox>
 {
     txt1 = "./src/txt/txt5"
+    pic1 = "./src/pic/pic2.png"
+    secert1 = {
+        "谜底" = "SYB817"
+        "错误提示文案" = "仔细瞧瞧中间部分的笔画"
+    }
 }

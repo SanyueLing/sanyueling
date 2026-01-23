@@ -1,0 +1,11 @@
+<txt>{txt1}</txt>
+<pic>{pic1}</pic>
+<inputbox>{secert1}</inputbox>
+{
+    txt1 = "./src/txt/txt6"
+    pic1 = "./src/pic/pic3.png"
+    secert1 = {
+        "谜底" = "实验楼B栋817"
+        "错误提示文案" = "一种常见的缩写方式"
+    }
+}

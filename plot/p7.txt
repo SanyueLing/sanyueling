@@ -1,0 +1,13 @@
+<txt>{txt1}</txt>
+<pic>{pic1}</pic>
+<txt>{txt2}</txt>
+<inputbox>{secert1}</inputbox>
+{
+    txt1 = "./src/txt/txt7"
+    pic1 = "./src/pic/pic4.png"
+    txt2 = "./src/txt/txt8"
+    secert1 = {
+        "谜底" = "810817"
+        "错误提示文案" = "6位密码，3+3"
+    }
+}
