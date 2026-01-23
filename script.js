@@ -62,6 +62,9 @@ class GameState {
         
         const containerRect = scrollContent.getBoundingClientRect();
         
+        // 移动端额外检查：确保容器有实际高度
+        if (containerRect.height === 0) return false;
+        
         // 检查当前视口范围内是否有未完成的谜题
         for (let i = 0; i < this.pages.length; i++) {
             const page = this.pages[i];
@@ -73,20 +76,31 @@ class GameState {
                     if (puzzleInput) {
                         const inputRect = puzzleInput.getBoundingClientRect();
                         
+                        // 移动端优化：增加一些容错范围
+                        const tolerance = 10; // 10px的容错范围
+                        const adjustedContainerTop = containerRect.top - tolerance;
+                        const adjustedContainerBottom = containerRect.bottom + tolerance;
+                        
                         // 检查输入框是否在视口中（包括部分可见）
-                        const isInputInViewport = inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
+                        const isInputInViewport = inputRect.top < adjustedContainerBottom && inputRect.bottom > adjustedContainerTop;
                         
                         // 检查输入框是否可见（高度大于0且没有被完全隐藏）
-                        const isInputVisible = inputRect.height > 0 && inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
+                        const isInputVisible = inputRect.height > 0 && inputRect.width > 0 && 
+                                             inputRect.top < adjustedContainerBottom && inputRect.bottom > adjustedContainerTop;
                         
-                        if (isInputInViewport && isInputVisible) {
+                        // 额外检查：输入框是否在可视区域内（不是被其他元素遮挡）
+                        const isInputDisplayed = puzzleInput.offsetParent !== null;
+                        
+                        if (isInputInViewport && isInputVisible && isInputDisplayed) {
                             console.log(`检测到第${i+1}页的谜题输入框在视口中，阻止向下滚动`, {
                                 inputTop: inputRect.top,
                                 inputBottom: inputRect.bottom,
                                 containerTop: containerRect.top,
                                 containerBottom: containerRect.bottom,
                                 isInputInViewport,
-                                isInputVisible
+                                isInputVisible,
+                                isInputDisplayed,
+                                tolerance
                             });
                             return true; // 有未完成的谜题
                         }
@@ -324,33 +338,63 @@ class GameRenderer {
 
         // 触摸事件（移动端支持）- 连续滚动
         let touchStartY = 0;
+        let touchStartTime = 0;
         this.scrollContent.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
+            touchStartTime = Date.now();
+        });
+
+        this.scrollContent.addEventListener('touchmove', (e) => {
+            // 在触摸移动时实时检查谜题阻断
+            const currentScroll = this.scrollContent.scrollTop;
+            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+            
+            // 如果当前滚动位置有谜题阻断，阻止默认滚动行为
+            if (currentScroll < maxScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
         });
 
         this.scrollContent.addEventListener('touchend', (e) => {
             const touchEndY = e.changedTouches[0].clientY;
             const diff = touchStartY - touchEndY;
+            const touchEndTime = Date.now();
+            const touchDuration = touchEndTime - touchStartTime;
             const currentScroll = this.scrollContent.scrollTop;
             const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
             
-            if (Math.abs(diff) > 50) {
+            // 增加触摸距离和时间的判断，避免误触
+            if (Math.abs(diff) > 30 && touchDuration < 1000) {
                 let newScroll = currentScroll;
+                const scrollDistance = Math.min(Math.abs(diff) * 2, 150); // 根据滑动距离动态调整滚动距离
+                
                 if (diff > 0) {
-                    newScroll = currentScroll + 100; // 向上滑动，向下滚动
+                    newScroll = currentScroll + scrollDistance; // 向上滑动，向下滚动
                 } else {
-                    newScroll = currentScroll - 100; // 向下滑动，向上滚动
+                    newScroll = currentScroll - scrollDistance; // 向下滑动，向上滚动
                 }
                 
                 const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
                 
                 // 检查谜题限制（检查目标位置）
                 if (clampedScroll > currentScroll && this.gameState.checkPuzzleAtPosition(clampedScroll, this.scrollContent.clientHeight)) {
+                    console.log('移动端：检测到未完成的谜题，阻止向下滚动', {
+                        diff,
+                        touchDuration,
+                        currentScroll,
+                        targetScroll: clampedScroll
+                    });
+                    e.preventDefault();
+                    e.stopPropagation();
                     return;
                 }
                 
-                this.scrollContent.scrollTo(0, clampedScroll);
-                this.gameState.updateScrollPosition(clampedScroll);
+                // 只有当滚动位置实际改变时才执行
+                if (clampedScroll !== currentScroll) {
+                    this.scrollContent.scrollTo(0, clampedScroll);
+                    this.gameState.updateScrollPosition(clampedScroll);
+                }
             }
         });
 
