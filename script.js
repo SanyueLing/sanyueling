@@ -57,33 +57,36 @@ class GameState {
 
     // 检查当前位置是否有未完成的谜题
     checkPuzzleAtPosition(scrollTop, viewportHeight) {
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return false;
+        
+        const containerRect = scrollContent.getBoundingClientRect();
+        
         // 检查当前视口范围内是否有未完成的谜题
         for (let i = 0; i < this.pages.length; i++) {
             const page = this.pages[i];
             if (page && page.hasPuzzle && !this.isPuzzleCompleted(i)) {
                 const pageElement = document.getElementById(`page-${i}`);
                 if (pageElement) {
-                    const scrollContent = document.getElementById('scroll-content');
-                    if (!scrollContent) continue;
-                    
-                    const containerRect = scrollContent.getBoundingClientRect();
-                    
                     // 主要检查：只有当谜题输入框在视口中时才阻止滚动
                     const puzzleInput = pageElement.querySelector('.puzzle-input');
                     if (puzzleInput) {
                         const inputRect = puzzleInput.getBoundingClientRect();
-                        const isPuzzleInputVisible = inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
                         
-                        // 额外检查：如果谜题输入框的顶部已经进入视口，也阻止滚动
-                        const isPuzzleInputTopVisible = inputRect.top >= containerRect.top && inputRect.top < containerRect.bottom;
+                        // 检查输入框是否在视口中（包括部分可见）
+                        const isInputInViewport = inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
                         
-                        if (isPuzzleInputVisible || isPuzzleInputTopVisible) {
+                        // 检查输入框是否可见（高度大于0且没有被完全隐藏）
+                        const isInputVisible = inputRect.height > 0 && inputRect.top < containerRect.bottom && inputRect.bottom > containerRect.top;
+                        
+                        if (isInputInViewport && isInputVisible) {
                             console.log(`检测到第${i+1}页的谜题输入框在视口中，阻止向下滚动`, {
-                                isPuzzleInputVisible,
-                                isPuzzleInputTopVisible,
                                 inputTop: inputRect.top,
+                                inputBottom: inputRect.bottom,
+                                containerTop: containerRect.top,
                                 containerBottom: containerRect.bottom,
-                                containerTop: containerRect.top
+                                isInputInViewport,
+                                isInputVisible
                             });
                             return true; // 有未完成的谜题
                         }
@@ -594,7 +597,7 @@ class GameRenderer {
         const errorMessage = element.content?.['错误提示文案'];
         
         if (answer === correctAnswer) {
-            // 答案正确
+            // 答案正确 - 直接解锁至浏览态，不显示任何提示
             errorDiv.textContent = '';
             input.disabled = true;
             container.querySelector('.puzzle-submit').disabled = true;
@@ -602,13 +605,6 @@ class GameRenderer {
             
             this.gameState.completePuzzle(pageIndex);
             this.updateScrollHint();
-            
-            // 显示成功提示
-            const successMsg = document.createElement('div');
-            successMsg.style.color = '#2ecc71';
-            successMsg.style.marginTop = '10px';
-            successMsg.textContent = '恭喜！谜题解开！';
-            container.appendChild(successMsg);
             
         } else {
             // 答案错误
