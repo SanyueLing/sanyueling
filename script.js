@@ -66,6 +66,7 @@ class GameState {
         if (containerRect.height === 0) return false;
         
         let hasBlockingPuzzle = false;
+        let puzzleContainer = null;
         
         // 检查当前视口范围内是否有未完成的谜题
         for (let i = 0; i < this.pages.length; i++) {
@@ -77,6 +78,7 @@ class GameState {
                     const puzzleInput = pageElement.querySelector('.puzzle-input');
                     if (puzzleInput) {
                         const inputRect = puzzleInput.getBoundingClientRect();
+                        puzzleContainer = puzzleInput.closest('.puzzle-input-container');
                         
                         // 移动端优化：增加一些容错范围
                         const tolerance = 10; // 10px的容错范围
@@ -116,9 +118,22 @@ class GameState {
                     if (isPageFullyInViewport) {
                         console.log(`检测到第${i+1}页完全在视口中且有未完成的谜题，阻止向下滚动`);
                         hasBlockingPuzzle = true;
+                        // 获取输入框容器
+                        puzzleContainer = pageElement.querySelector('.puzzle-input-container');
                         break;
                     }
                 }
+            }
+        }
+        
+        // 根据谜题状态固定或恢复输入框位置
+        if (puzzleContainer) {
+            if (hasBlockingPuzzle) {
+                puzzleContainer.classList.add('puzzle-locked');
+                console.log('输入框已固定位置');
+            } else {
+                puzzleContainer.classList.remove('puzzle-locked');
+                console.log('输入框已恢复原位置');
             }
         }
         
@@ -776,8 +791,13 @@ class GameRenderer {
             container.querySelector('.puzzle-submit').disabled = true;
             container.classList.add('puzzle-success');
             
+            // 移除固定位置
+            container.classList.remove('puzzle-locked');
+            
             this.gameState.completePuzzle(pageIndex);
             this.updateScrollHint();
+            
+            console.log(`第${pageIndex + 1}页谜题解答正确，已解锁`);
             
         } else {
             // 答案错误

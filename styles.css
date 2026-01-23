@@ -141,11 +141,35 @@ body {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.8s ease, transform 0.8s ease;
+    position: relative; /* 默认相对定位 */
 }
 
 .puzzle-input-container.visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+/* 解谜态下固定输入框 */
+.puzzle-input-container.puzzle-locked {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 100px; /* 距离底部100px */
+    z-index: 1000;
+    background: rgba(245, 245, 220, 0.95); /* 半透明背景 */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(5px);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .puzzle-input-container.puzzle-locked {
+        bottom: 50px; /* 移动端距离底部更近 */
+        width: 90%;
+        max-width: 300px;
+    }
 }
 
 .puzzle-input {
