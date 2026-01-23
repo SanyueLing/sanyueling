@@ -55,7 +55,7 @@ class GameState {
         this.save();
     }
 
-    // 检查当前位置是否有未完成的谜题
+        // 检查当前位置是否有未完成的谜题
     checkPuzzleAtPosition(scrollTop, viewportHeight) {
         const scrollContent = document.getElementById('scroll-content');
         if (!scrollContent) return false;
@@ -64,6 +64,8 @@ class GameState {
         
         // 移动端额外检查：确保容器有实际高度
         if (containerRect.height === 0) return false;
+        
+        let hasBlockingPuzzle = false;
         
         // 检查当前视口范围内是否有未完成的谜题
         for (let i = 0; i < this.pages.length; i++) {
@@ -102,7 +104,8 @@ class GameState {
                                 isInputDisplayed,
                                 tolerance
                             });
-                            return true; // 有未完成的谜题
+                            hasBlockingPuzzle = true;
+                            break; // 找到一个阻断谜题就足够了
                         }
                     }
                     
@@ -112,12 +115,28 @@ class GameState {
                     
                     if (isPageFullyInViewport) {
                         console.log(`检测到第${i+1}页完全在视口中且有未完成的谜题，阻止向下滚动`);
-                        return true;
+                        hasBlockingPuzzle = true;
+                        break;
                     }
                 }
             }
         }
-        return false;
+        
+        // 移动端：根据谜题状态自动锁定/解锁滚动
+        if (this.isMobileDevice()) {
+            if (hasBlockingPuzzle) {
+                this.lockMobileScroll();
+            } else {
+                this.unlockMobileScroll();
+            }
+        }
+        
+        return hasBlockingPuzzle;
+    }
+
+    // 检测是否为移动设备
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 }
 
@@ -221,7 +240,10 @@ class PageParser {
             const trimmed = line.trim();
             if (trimmed && trimmed.includes('=')) {
                 const [key, value] = trimmed.split('=').map(s => s.trim());
-                result[key.replace(/['"]/g, '')] = value.replace(/['"]/g, '');
+                // 移除键和值周围的引号
+                const cleanKey = key.replace(/^['"]|['"]$/g, '');
+                const cleanValue = value.replace(/^['"]|['"]$/g, '');
+                result[cleanKey] = cleanValue;
             }
         }
 
@@ -336,6 +358,26 @@ class GameRenderer {
             this.updateScrollHint();
         });
 
+        // 窗口大小变化监听 - 重新检查谜题状态
+        window.addEventListener('resize', () => {
+            console.log('窗口大小变化，重新检查谜题状态');
+            this.updateScrollHint();
+            
+            // 检查当前滚动位置是否有谜题阻断
+            const currentScroll = this.scrollContent.scrollTop;
+            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+            
+            if (currentScroll < maxScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                console.log('窗口调整后检测到谜题阻断，阻止滚动');
+                // 强制滚动到安全位置（如果有谜题阻断）
+                const safeScroll = this.findSafeScrollPosition(currentScroll);
+                if (safeScroll !== currentScroll) {
+                    this.scrollContent.scrollTo(0, safeScroll);
+                    this.gameState.updateScrollPosition(safeScroll);
+                }
+            }
+        });
+
         // 触摸事件（移动端支持）- 连续滚动
         let touchStartY = 0;
         let touchStartTime = 0;
@@ -351,10 +393,12 @@ class GameRenderer {
             
             // 如果当前滚动位置有谜题阻断，阻止默认滚动行为
             if (currentScroll < maxScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                console.log('移动端touchmove：检测到谜题阻断，阻止滚动');
                 e.preventDefault();
                 e.stopPropagation();
+                return false;
             }
-        });
+        }, { passive: false }); // 明确指定非被动模式以允许preventDefault
 
         this.scrollContent.addEventListener('touchend', (e) => {
             const touchEndY = e.changedTouches[0].clientY;
@@ -435,6 +479,48 @@ class GameRenderer {
         } else {
             this.hideScrollHint();
         }
+    }
+
+    // 找到安全的滚动位置（避开谜题区域）
+    findSafeScrollPosition(currentScroll) {
+        let safeScroll = currentScroll;
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return safeScroll;
+        
+        // 从当前位置向上查找安全位置
+        for (let testScroll = currentScroll; testScroll >= 0; testScroll -= 10) {
+            if (!this.gameState.checkPuzzleAtPosition(testScroll, scrollContent.clientHeight)) {
+                safeScroll = testScroll;
+                break;
+            }
+        }
+        
+        console.log('找到安全滚动位置:', safeScroll, '原位置:', currentScroll);
+        return safeScroll;
+    }
+
+    // 移动端滚动锁定
+    lockMobileScroll() {
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        // 添加CSS类来禁用滚动
+        scrollContent.style.overflowY = 'hidden';
+        scrollContent.style.touchAction = 'none';
+        
+        console.log('移动端滚动已锁定');
+    }
+
+    // 移动端滚动解锁
+    unlockMobileScroll() {
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        // 恢复CSS属性
+        scrollContent.style.overflowY = 'auto';
+        scrollContent.style.touchAction = 'pan-y';
+        
+        console.log('移动端滚动已解锁');
     }
 
     showScrollHint() {
