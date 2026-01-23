@@ -126,11 +126,15 @@ class GameState {
             }
         }
         
-        // 根据谜题状态固定或恢复输入框位置
+        // 根据谜题状态优化输入框位置
         if (puzzleContainer) {
             if (hasBlockingPuzzle) {
                 puzzleContainer.classList.add('puzzle-locked');
-                console.log('输入框已固定位置');
+                
+                // 确保输入框在视口中可见
+                this.ensureInputVisible(puzzleContainer);
+                
+                console.log('输入框已优化位置');
             } else {
                 puzzleContainer.classList.remove('puzzle-locked');
                 console.log('输入框已恢复原位置');
@@ -579,6 +583,43 @@ class GameRenderer {
         scrollContent.style.touchAction = 'pan-y';
         
         console.log('移动端滚动已解锁');
+    }
+
+    // 确保输入框在视口中可见
+    ensureInputVisible(puzzleContainer) {
+        if (!puzzleContainer) return;
+        
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        const containerRect = scrollContent.getBoundingClientRect();
+        const inputRect = puzzleContainer.getBoundingClientRect();
+        
+        // 检查输入框是否完全在视口中
+        const isFullyVisible = inputRect.top >= containerRect.top && 
+                              inputRect.bottom <= containerRect.bottom;
+        
+        if (!isFullyVisible) {
+            // 计算需要滚动的位置，使输入框居中显示
+            const inputCenter = inputRect.top + inputRect.height / 2;
+            const viewportCenter = containerRect.top + containerRect.height / 2;
+            const scrollAdjustment = inputCenter - viewportCenter;
+            
+            const currentScroll = scrollContent.scrollTop;
+            const newScroll = currentScroll + scrollAdjustment;
+            
+            // 确保滚动位置在有效范围内
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+            
+            if (Math.abs(clampedScroll - currentScroll) > 5) {
+                console.log('调整输入框位置，滚动距离:', clampedScroll - currentScroll);
+                scrollContent.scrollTo({
+                    top: clampedScroll,
+                    behavior: 'smooth'
+                });
+            }
+        }
     }
 
     showScrollHint() {
