@@ -131,10 +131,10 @@ class GameState {
             if (hasBlockingPuzzle) {
                 puzzleContainer.classList.add('puzzle-locked');
                 
-                // 确保输入框在视口中可见
-                this.ensureInputVisible(puzzleContainer);
+                // 强制将输入框滚动到视口中央
+                this.centerInputInViewport(puzzleContainer);
                 
-                console.log('输入框已优化位置');
+                console.log('输入框已居中显示');
             } else {
                 puzzleContainer.classList.remove('puzzle-locked');
                 console.log('输入框已恢复原位置');
@@ -585,8 +585,40 @@ class GameRenderer {
         console.log('移动端滚动已解锁');
     }
 
-    // 确保输入框在视口中可见
-    ensureInputVisible(puzzleContainer) {
+     // 强制将输入框滚动到视口中央
+     centerInputInViewport(puzzleContainer) {
+         if (!puzzleContainer) return;
+         
+         const scrollContent = document.getElementById('scroll-content');
+         if (!scrollContent) return;
+         
+         const containerRect = scrollContent.getBoundingClientRect();
+         const inputRect = puzzleContainer.getBoundingClientRect();
+         
+         // 计算将输入框居中所需的滚动距离
+         const inputCenter = inputRect.top + inputRect.height / 2;
+         const viewportCenter = containerRect.top + containerRect.height / 2;
+         const scrollOffset = inputCenter - viewportCenter;
+         
+         const currentScroll = scrollContent.scrollTop;
+         const newScroll = currentScroll + scrollOffset;
+         const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+         
+         // 确保滚动位置在有效范围内
+         const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
+         
+         // 只有当需要显著滚动时才执行
+         if (Math.abs(clampedScroll - currentScroll) > 5) {
+             console.log('居中输入框，从', currentScroll, '到', clampedScroll, '偏移:', scrollOffset);
+             scrollContent.scrollTo({
+                 top: clampedScroll,
+                 behavior: 'smooth'
+             });
+         }
+     }
+
+     // 确保输入框在视口中可见
+     ensureInputVisible(puzzleContainer) {
         if (!puzzleContainer) return;
         
         const scrollContent = document.getElementById('scroll-content');

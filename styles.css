@@ -151,9 +151,7 @@ body {
 
 /* 解谜态下输入框优化 */
 .puzzle-input-container.puzzle-locked {
-    position: sticky;
-    top: 50%; /* 垂直居中 */
-    transform: translateY(-50%);
+    position: relative; /* 保持相对定位 */
     z-index: 100;
     background: rgba(245, 245, 220, 0.98); /* 半透明背景 */
     padding: 20px;
@@ -161,12 +159,12 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     margin: 20px 0;
     backdrop-filter: blur(5px);
+    border: 2px solid #d4af37; /* 添加边框突出显示 */
 }
 
 /* 移动端适配 */
 @media (max-width: 768px) {
     .puzzle-input-container.puzzle-locked {
-        top: 60%; /* 移动端稍微偏下 */
         padding: 15px;
     }
 }
