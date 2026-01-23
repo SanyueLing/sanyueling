@@ -208,18 +208,42 @@ class PageParser {
     parseConfig(configContent, page) {
         const lines = configContent.split('\n');
         const config = {};
+        let i = 0;
 
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed && trimmed.includes('=')) {
-                const [key, value] = trimmed.split('=').map(s => s.trim());
-                if (value.startsWith('{') && value.endsWith('}')) {
-                    // 解析嵌套对象
+        while (i < lines.length) {
+            const line = lines[i].trim();
+            if (line && line.includes('=')) {
+                const [key, value] = line.split('=').map(s => s.trim());
+                
+                if (value === '{') {
+                    // 多行嵌套对象，收集直到遇到 }
+                    let nestedContent = '';
+                    let braceCount = 1;
+                    i++; // 跳过当前行
+                    
+                    while (i < lines.length && braceCount > 0) {
+                        const nextLine = lines[i];
+                        nestedContent += nextLine + '\n';
+                        
+                        for (const char of nextLine) {
+                            if (char === '{') braceCount++;
+                            if (char === '}') braceCount--;
+                        }
+                        
+                        i++;
+                    }
+                    
+                    // 解析收集到的嵌套内容
+                    config[key] = this.parseNestedObject('{' + nestedContent);
+                    continue; // 跳过i++
+                } else if (value.startsWith('{') && value.endsWith('}')) {
+                    // 单行嵌套对象
                     config[key] = this.parseNestedObject(value);
                 } else {
                     config[key] = value.replace(/['"]/g, '');
                 }
             }
+            i++;
         }
 
         // 将配置应用到页面元素
@@ -359,23 +383,42 @@ class GameRenderer {
         });
 
         // 窗口大小变化监听 - 重新检查谜题状态
+        let resizeTimer;
         window.addEventListener('resize', () => {
             console.log('窗口大小变化，重新检查谜题状态');
-            this.updateScrollHint();
             
-            // 检查当前滚动位置是否有谜题阻断
-            const currentScroll = this.scrollContent.scrollTop;
-            const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
-            
-            if (currentScroll < maxScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
-                console.log('窗口调整后检测到谜题阻断，阻止滚动');
-                // 强制滚动到安全位置（如果有谜题阻断）
-                const safeScroll = this.findSafeScrollPosition(currentScroll);
-                if (safeScroll !== currentScroll) {
-                    this.scrollContent.scrollTo(0, safeScroll);
-                    this.gameState.updateScrollPosition(safeScroll);
-                }
+            // 清除之前的定时器
+            if (resizeTimer) {
+                clearTimeout(resizeTimer);
             }
+            
+            // 延迟执行，等待浏览器完成布局重排
+            resizeTimer = setTimeout(() => {
+                this.updateScrollHint();
+                
+                // 检查当前滚动位置是否有谜题阻断
+                const currentScroll = this.scrollContent.scrollTop;
+                const maxScroll = this.scrollContent.scrollHeight - this.scrollContent.clientHeight;
+                
+                console.log('窗口调整后检查谜题状态:', {
+                    currentScroll,
+                    maxScroll,
+                    hasBlockingPuzzle: this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)
+                });
+                
+                if (currentScroll < maxScroll && this.gameState.checkPuzzleAtPosition(currentScroll, this.scrollContent.clientHeight)) {
+                    console.log('窗口调整后检测到谜题阻断，强制滚动到安全位置');
+                    // 强制滚动到安全位置（如果有谜题阻断）
+                    const safeScroll = this.findSafeScrollPosition(currentScroll);
+                    if (safeScroll !== currentScroll) {
+                        this.scrollContent.scrollTo({
+                            top: safeScroll,
+                            behavior: 'auto' // 立即滚动，不动画
+                        });
+                        this.gameState.updateScrollPosition(safeScroll);
+                    }
+                }
+            }, 100); // 100ms延迟确保布局稳定
         });
 
         // 触摸事件（移动端支持）- 连续滚动
