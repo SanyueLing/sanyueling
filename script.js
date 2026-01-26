@@ -590,6 +590,14 @@ class GameRenderer {
         // });
         
         console.log('调试模式：已禁用右键和F12限制');
+        
+        // 重新开始按钮事件
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => {
+                this.handleRestart();
+            });
+        }
     }
 
     // 注意：scrollDown和scrollUp方法已不再使用，已替换为连续滚动
@@ -881,6 +889,36 @@ class GameRenderer {
                     loadingScreen.style.display = 'none';
                 }, 500);
             }, 1000);
+        }
+    }
+
+    // 处理重新开始
+    handleRestart() {
+        // 显示确认对话框
+        const confirmed = confirm('确定要重新开始游戏吗？这将清除所有进度并从头开始。');
+        
+        if (confirmed) {
+            console.log('用户确认重新开始，清除本地存储并重置游戏');
+            
+            // 清除本地存储
+            localStorage.removeItem('mysteryGameProgress');
+            
+            // 重置游戏状态
+            this.gameState.scrollPosition = 0;
+            this.gameState.completedPuzzles = new Set();
+            this.gameState.isPuzzleMode = false;
+            
+            // 重置滚动位置
+            if (this.scrollContent) {
+                this.scrollContent.scrollTo(0, 0);
+            }
+            
+            // 重新加载游戏
+            this.loadGame();
+            
+            console.log('游戏已重新开始');
+        } else {
+            console.log('用户取消重新开始');
         }
     }
 }
