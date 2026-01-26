@@ -151,7 +151,9 @@ body {
 
 /* 解谜态下输入框优化 */
 .puzzle-input-container.puzzle-locked {
-    position: relative; /* 保持相对定位 */
+    position: sticky; /* 使用粘性定位 */
+    top: 50%; /* 定位到容器中央 */
+    transform: translateY(-50%); /* 向上偏移自身高度的一半 */
     z-index: 100;
     background: rgba(245, 245, 220, 0.98); /* 半透明背景 */
     padding: 20px;
@@ -160,6 +162,9 @@ body {
     margin: 20px 0;
     backdrop-filter: blur(5px);
     border: 2px solid #d4af37; /* 添加边框突出显示 */
+    /* 确保在粘性定位时保持居中 */
+    left: 0;
+    right: 0;
 }
 
 /* 移动端适配 */

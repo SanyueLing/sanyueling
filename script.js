@@ -157,6 +157,75 @@ class GameState {
     isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
+
+    // 移动端滚动锁定
+    lockMobileScroll() {
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        // 添加CSS类来禁用滚动
+        scrollContent.style.overflowY = 'hidden';
+        scrollContent.style.touchAction = 'none';
+        
+        console.log('移动端滚动已锁定');
+    }
+
+    // 移动端滚动解锁
+    unlockMobileScroll() {
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        // 恢复CSS属性
+        scrollContent.style.overflowY = 'auto';
+        scrollContent.style.touchAction = 'pan-y';
+        
+        console.log('移动端滚动已解锁');
+    }
+
+    // 强制将输入框滚动到视口中央
+    centerInputInViewport(puzzleContainer) {
+        if (!puzzleContainer) return;
+        
+        const scrollContent = document.getElementById('scroll-content');
+        if (!scrollContent) return;
+        
+        // 使用粘性定位时，我们只需要确保输入框容器在视口中
+        const containerRect = scrollContent.getBoundingClientRect();
+        const inputRect = puzzleContainer.getBoundingClientRect();
+        
+        // 检查输入框是否完全在视口中
+        const isFullyVisible = inputRect.top >= containerRect.top && 
+                              inputRect.bottom <= containerRect.bottom;
+        
+        if (!isFullyVisible) {
+            const currentScroll = scrollContent.scrollTop;
+            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
+            let targetScroll = currentScroll;
+            
+            // 如果输入框在上方超出视口
+            if (inputRect.top < containerRect.top) {
+                // 滚动使输入框顶部对齐视口顶部，留一些边距
+                targetScroll = currentScroll + inputRect.top - containerRect.top - 20;
+            }
+            // 如果输入框在下方超出视口
+            else if (inputRect.bottom > containerRect.bottom) {
+                // 滚动使输入框底部对齐视口底部，留一些边距
+                targetScroll = currentScroll + inputRect.bottom - containerRect.bottom + 20;
+            }
+            
+            // 确保滚动位置在有效范围内
+            targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
+            
+            // 只有当需要显著滚动时才执行
+            if (Math.abs(targetScroll - currentScroll) > 5) {
+                console.log('调整输入框位置，从', currentScroll, '到', targetScroll);
+                scrollContent.scrollTo({
+                    top: targetScroll,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    }
 }
 
 // 页面解析器
@@ -561,105 +630,7 @@ class GameRenderer {
         return safeScroll;
     }
 
-    // 移动端滚动锁定
-    lockMobileScroll() {
-        const scrollContent = document.getElementById('scroll-content');
-        if (!scrollContent) return;
-        
-        // 添加CSS类来禁用滚动
-        scrollContent.style.overflowY = 'hidden';
-        scrollContent.style.touchAction = 'none';
-        
-        console.log('移动端滚动已锁定');
-    }
-
-    // 移动端滚动解锁
-    unlockMobileScroll() {
-        const scrollContent = document.getElementById('scroll-content');
-        if (!scrollContent) return;
-        
-        // 恢复CSS属性
-        scrollContent.style.overflowY = 'auto';
-        scrollContent.style.touchAction = 'pan-y';
-        
-        console.log('移动端滚动已解锁');
-    }
-
-     // 强制将输入框滚动到视口中央
-     centerInputInViewport(puzzleContainer) {
-         if (!puzzleContainer) return;
-         
-         const scrollContent = document.getElementById('scroll-content');
-         if (!scrollContent) return;
-         
-         const containerRect = scrollContent.getBoundingClientRect();
-         const inputRect = puzzleContainer.getBoundingClientRect();
-         
-         // 计算将输入框居中所需的滚动距离
-         const inputCenter = inputRect.top + inputRect.height / 2;
-         const viewportCenter = containerRect.top + containerRect.height / 2;
-         const scrollOffset = inputCenter - viewportCenter;
-         
-         const currentScroll = scrollContent.scrollTop;
-         const newScroll = currentScroll + scrollOffset;
-         const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
-         
-         // 确保滚动位置在有效范围内
-         const clampedScroll = Math.max(0, Math.min(newScroll, maxScroll));
-         
-         // 只有当需要显著滚动时才执行
-         if (Math.abs(clampedScroll - currentScroll) > 5) {
-             console.log('居中输入框，从', currentScroll, '到', clampedScroll, '偏移:', scrollOffset);
-             scrollContent.scrollTo({
-                 top: clampedScroll,
-                 behavior: 'smooth'
-             });
-         }
-     }
-
-     // 确保输入框在视口中可见
-     ensureInputVisible(puzzleContainer) {
-        if (!puzzleContainer) return;
-        
-        const scrollContent = document.getElementById('scroll-content');
-        if (!scrollContent) return;
-        
-        const containerRect = scrollContent.getBoundingClientRect();
-        const inputRect = puzzleContainer.getBoundingClientRect();
-        
-        // 检查输入框是否完全在视口中
-        const isFullyVisible = inputRect.top >= containerRect.top && 
-                              inputRect.bottom <= containerRect.bottom;
-        
-        if (!isFullyVisible) {
-            const currentScroll = scrollContent.scrollTop;
-            const maxScroll = scrollContent.scrollHeight - scrollContent.clientHeight;
-            let targetScroll = currentScroll;
-            
-            // 如果输入框在上方超出视口
-            if (inputRect.top < containerRect.top) {
-                // 滚动使输入框顶部对齐视口顶部，留一些边距
-                targetScroll = currentScroll + inputRect.top - containerRect.top - 20;
-            }
-            // 如果输入框在下方超出视口
-            else if (inputRect.bottom > containerRect.bottom) {
-                // 滚动使输入框底部对齐视口底部，留一些边距
-                targetScroll = currentScroll + inputRect.bottom - containerRect.bottom + 20;
-            }
-            
-            // 确保滚动位置在有效范围内
-            targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
-            
-            // 只有当需要显著滚动时才执行
-            if (Math.abs(targetScroll - currentScroll) > 5) {
-                console.log('调整输入框位置，从', currentScroll, '到', targetScroll);
-                scrollContent.scrollTo({
-                    top: targetScroll,
-                    behavior: 'smooth'
-                });
-            }
-        }
-    }
+    // 注意：这些方法已移至GameState类中，避免重复定义
 
     showScrollHint() {
         if (this.scrollHint) {
